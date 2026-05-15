@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data Science Job Matcher</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a0f;
+      --surface: #111118;
+      --card:    #16161f;
+      --border:  #2a2a3a;
+      --accent:  #7c6cff;
+      --accent2: #ff6c9d;
+      --text:    #e8e8f0;
+      --muted:   #7070a0;
+      --success: #4fffb0;
+      --warn:    #ffcc4d;
+      --radius:  12px;
+    }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 40px 20px 80px;
+    }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .wrap { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    header { text-align: center; margin-bottom: 48px; }
+    .eyebrow { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+    h1 {
+      font-family: 'Syne', sans-serif; font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800; line-height: 1.1;
+      background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .subtitle { margin-top: 14px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 4px; margin-bottom: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px;
+    }
+    .tab {
+      flex: 1; padding: 12px; border: none; border-radius: 8px;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+      background: transparent; color: var(--muted); transition: all 0.2s;
+    }
+    .tab.active { background: var(--card); color: var(--text); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 36px; margin-bottom: 24px;
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 8px;
+      padding: 44px 24px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s; position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: rgba(124,108,255,0.05); }
+    .drop-icon { font-size: 38px; margin-bottom: 10px; display: block; }
+    .drop-label { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+    .drop-sub { font-size: 12px; color: var(--muted); }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    .file-chosen { margin-top: 14px; font-size: 12px; color: var(--success); display: none; align-items: center; gap: 8px; justify-content: center; }
+    .file-chosen.show { display: flex; }
+
+    /* ── Location filter ── */
+    .filter-section { margin-top: 28px; }
+    .filter-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .filter-label span { color: var(--accent); font-size: 10px; cursor: pointer; }
+    .filter-label span:hover { text-decoration: underline; }
+
+    .loc-search { width: 100%; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px 8px 0 0; color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; outline: none; transition: border-color 0.2s; }
+    .loc-search:focus { border-color: var(--accent); }
+    .loc-search::placeholder { color: var(--muted); }
+
+    .loc-list { max-height: 180px; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; margin-bottom: 12px; }
+    .loc-list::-webkit-scrollbar { width: 4px; }
+    .loc-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .loc-item { padding: 9px 14px; font-size: 12px; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s; user-select: none; }
+    .loc-item:hover { background: rgba(124,108,255,0.08); }
+    .loc-item.selected { color: var(--accent); }
+    .loc-check { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 9px; transition: all 0.15s; }
+    .loc-item.selected .loc-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; }
+    .tag { font-size: 11px; padding: 4px 10px 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; background: rgba(124,108,255,0.15); color: var(--accent); border: 1px solid rgba(124,108,255,0.3); cursor: pointer; }
+    .tag:hover { background: rgba(124,108,255,0.25); }
+    .no-filter-note { font-size: 11px; color: var(--muted); font-style: italic; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: block; width: 100%; margin-top: 28px; padding: 16px;
+      border: none; border-radius: 8px; cursor: pointer;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
+      letter-spacing: 1px; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ── Loader ── */
+    .loader { display: none; text-align: center; padding: 32px 0; }
+    .loader.show { display: block; }
+    .spinner { width: 40px; height: 40px; border-radius: 50%; margin: 0 auto 16px; border: 3px solid var(--border); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-msg { color: var(--muted); font-size: 13px; }
+    .loader-msg span { color: var(--accent); }
+
+    /* ── Alerts ── */
+    .warn-box { display: none; background: rgba(255,204,77,0.07); border: 1px solid rgba(255,204,77,0.3); border-radius: var(--radius); padding: 14px 20px; color: var(--warn); font-size: 12px; margin-bottom: 20px; }
+    .warn-box.show { display: block; }
+    .error-box { display: none; background: rgba(255,60,60,0.07); border: 1px solid rgba(255,60,60,0.3); border-radius: var(--radius); padding: 20px 24px; color: #ff7070; font-size: 13px; margin-bottom: 24px; }
+    .error-box.show { display: block; }
+
+    /* ── Results ── */
+    .results { display: none; }
+    .results.show { display: block; }
+    .section-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .job-grid { display: grid; gap: 14px; margin-bottom: 36px; }
+    .job-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: grid; gap: 8px; animation: fadeUp 0.4s ease both; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .job-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .job-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); }
+    .job-company { font-size: 12px; color: var(--accent); margin-top: 2px; }
+    .badge { font-size: 10px; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; border: 1px solid var(--border); color: var(--muted); }
+    .job-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; color: var(--muted); }
+    .skills-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .skill-tag { font-size: 10px; padding: 3px 9px; border-radius: 4px; background: rgba(124,108,255,0.12); color: var(--accent); border: 1px solid rgba(124,108,255,0.25); }
+    .analysis-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 28px 32px; animation: fadeUp 0.4s ease 0.2s both; }
+    .analysis-card pre { white-space: pre-wrap; word-break: break-word; font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; color: var(--text); }
+
+    /* ── Chatbot ── */
+    .chat-notice {
+      background: rgba(124,108,255,0.07); border: 1px solid rgba(124,108,255,0.2);
+      border-radius: var(--radius); padding: 16px 20px;
+      font-size: 12px; color: var(--muted); margin-bottom: 20px; line-height: 1.7;
+    }
+    .chat-notice strong { color: var(--accent); }
+
+    .chat-window {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); height: 420px;
+      overflow-y: auto; padding: 20px; margin-bottom: 16px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .chat-window::-webkit-scrollbar { width: 4px; }
+    .chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .chat-empty {
+      margin: auto; text-align: center; color: var(--muted); font-size: 13px; line-height: 2;
+    }
+    .chat-empty .chat-emoji { font-size: 32px; display: block; margin-bottom: 8px; }
+
+    .bubble-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .bubble-wrap.user { align-items: flex-end; }
+    .bubble-wrap.assistant { align-items: flex-start; }
+
+    .bubble-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 0 4px; }
+
+    .bubble {
+      max-width: 80%; padding: 12px 16px; border-radius: 12px;
+      font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+    }
+    .bubble.user {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border-bottom-right-radius: 4px;
+    }
+    .bubble.assistant {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-bottom-left-radius: 4px;
+    }
+
+    .bubble.thinking { color: var(--muted); font-style: italic; }
+
+    .chat-input-row { display: flex; gap: 10px; }
+    .chat-input {
+      flex: 1; padding: 14px 16px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
+      outline: none; resize: none; transition: border-color 0.2s;
+      height: 52px; line-height: 1.5;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--muted); }
+
+    .chat-send {
+      padding: 0 20px; border: none; border-radius: 8px; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 18px; transition: opacity 0.2s;
+    }
+    .chat-send:hover { opacity: 0.85; }
+    .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .chat-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .suggestion {
+      font-size: 11px; padding: 6px 12px; border-radius: 20px; cursor: pointer;
+      border: 1px solid var(--border); color: var(--muted);
+      background: var(--card); transition: all 0.15s;
+    }
+    .suggestion:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">AI-Powered · RAG · Ollama</p>
+    <h1>Data Science<br/>Job Matcher</h1>
+    <p class="subtitle">Upload your resume, find matching jobs, and chat with an AI career coach.</p>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('matcher')">🔍 Job Matcher</button>
+    <button class="tab"        onclick="switchTab('chatbot')">💬 Resume Chatbot</button>
+  </div>
+
+  <!-- ══════════════ MATCHER TAB ══════════════ -->
+  <div class="tab-panel active" id="tab-matcher">
+
+    <div class="card">
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <span class="drop-icon">📄</span>
+        <p class="drop-label">Drop your resume here</p>
+        <p class="drop-sub">Supports PDF and TXT</p>
+        <input type="file" id="fileInput" accept=".pdf,.txt"/>
+      </div>
+      <div class="file-chosen" id="fileChosen">
+        <span>✅</span><span id="fileName"></span>
+      </div>
+
+      <!-- Location filter -->
+      <div class="filter-section">
+        <div class="filter-label">
+          Preferred Locations
+          <span onclick="clearLocations()">Clear all</span>
+        </div>
+        <input class="loc-search" id="locSearch" type="text" placeholder="🔍  Search countries…" oninput="filterList(this.value)" autocomplete="off"/>
+        <div class="loc-list" id="locList"></div>
+        <div class="selected-tags" id="selectedTags">
+          <span class="no-filter-note" id="noFilterNote">No location selected — showing global results</span>
+        </div>
+      </div>
+
+      <button class="btn" id="matchBtn" disabled onclick="submitResume()">Find Matching Jobs</button>
+    </div>
+
+    <div class="loader" id="matchLoader">
+      <div class="spinner"></div>
+      <p class="loader-msg">Embedding resume &amp; searching jobs…<br/><span>This may take 30–60 seconds</span></p>
+    </div>
+
+    <div class="warn-box"  id="warnBox"></div>
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="results" id="results">
+      <p class="section-title">Top Matched Jobs</p>
+      <div class="job-grid" id="jobGrid"></div>
+      <p class="section-title">AI Analysis &amp; Ranking</p>
+      <div class="analysis-card"><pre id="analysisText"></pre></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ CHATBOT TAB ══════════════ -->
+  <div class="tab-panel" id="tab-chatbot">
+
+    <div class="chat-notice">
+      <strong>How it works:</strong> Upload your resume using the Job Matcher tab first,
+      then come here to ask questions. The AI has read your resume and can give you
+      personalised advice — improvements, skill gaps, interview tips, and more.
+    </div>
+
+    <!-- Quick suggestion chips -->
+    <div class="chat-suggestions">
+      <div class="suggestion" onclick="useSuggestion(this)">How can I improve my resume?</div>
+      <div class="suggestion" onclick="useSuggestion(this)">What are my strongest skills?</div>
+      <div class="suggestion" onclick="useSuggestion(this)">What skills am I missing for data science roles?</div>
+      <div class="suggestion" onclick="useSuggestion(this)">How should I tailor my resume for ML jobs?</div>
+      <div class="suggestion" onclick="useSuggestion(this)">Give me interview tips based on my background</div>
+      <div class="suggestion" onclick="useSuggestion(this)">Write a professional summary for me</div>
+    </div>
+
+    <!-- Chat window -->
+    <div class="chat-window" id="chatWindow">
+      <div class="chat-empty" id="chatEmpty">
+        <span class="chat-emoji">🤖</span>
+        Upload your resume in the Job Matcher tab,<br/>
+        then ask me anything about it.
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" placeholder="Ask about your resume…" onkeydown="handleChatKey(event)"></textarea>
+      <button class="chat-send" id="chatSend" onclick="sendMessage()">➤</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let selectedFile      = null;
+  let allLocations      = [];
+  let selectedLocations = new Set();
+  let sessionId         = String(Date.now());   // unique per page load
+  let chatHistory       = [];                   // [{role, content}, ...]
+  let resumeUploaded    = false;
+
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['matcher','chatbot'][i] === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  // ── File upload ────────────────────────────────────────────────────────────
+  const fileInput  = document.getElementById('fileInput');
+  const dropZone   = document.getElementById('dropZone');
+  const matchBtn   = document.getElementById('matchBtn');
+  const fileChosen = document.getElementById('fileChosen');
+  const fileName   = document.getElementById('fileName');
+
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag');
+    if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    fileName.textContent = file.name;
+    fileChosen.classList.add('show');
+    matchBtn.disabled = false;
+  }
+
+  // ── Locations ──────────────────────────────────────────────────────────────
+  async function loadLocations() {
+    try {
+      const res  = await fetch('/locations');
+      const data = await res.json();
+      allLocations = data.locations;
+      renderList(allLocations);
+    } catch(e) { console.error('Could not load locations', e); }
+  }
+
+  function renderList(locs) {
+    const list = document.getElementById('locList');
+    list.innerHTML = locs.length === 0
+      ? '<div class="loc-item" style="color:var(--muted)">No matches</div>'
+      : locs.map(loc => `
+          <div class="loc-item ${selectedLocations.has(loc) ? 'selected' : ''}"
+               onclick="toggleLocation('${loc.replace(/'/g,"\\'")}')">
+            <div class="loc-check">${selectedLocations.has(loc) ? '✓' : ''}</div>
+            ${loc}
+          </div>`).join('');
+  }
+
+  function filterList(q) {
+    renderList(allLocations.filter(l => l.toLowerCase().includes(q.toLowerCase())));
+  }
+
+  function toggleLocation(loc) {
+    selectedLocations.has(loc) ? selectedLocations.delete(loc) : selectedLocations.add(loc);
+    filterList(document.getElementById('locSearch').value);
+    renderTags();
+  }
+
+  function removeLocation(loc) {
+    selectedLocations.delete(loc);
+    filterList(document.getElementById('locSearch').value);
+    renderTags();
+  }
+
+  function clearLocations() {
+    selectedLocations.clear();
+    document.getElementById('locSearch').value = '';
+    renderList(allLocations);
+    renderTags();
+  }
+
+  function renderTags() {
+    const container = document.getElementById('selectedTags');
+    const note      = document.getElementById('noFilterNote');
+    if (selectedLocations.size === 0) {
+      container.innerHTML = '';
+      container.appendChild(note);
+      return;
+    }
+    note.style.display = 'none';
+    container.innerHTML = [...selectedLocations].map(loc => `
+      <div class="tag" onclick="removeLocation('${loc.replace(/'/g,"\\'")}')">
+        ${loc} <span>×</span>
+      </div>`).join('');
+  }
+
+  // ── Job matching ───────────────────────────────────────────────────────────
+  async function submitResume() {
+    if (!selectedFile) return;
+
+    document.getElementById('results').classList.remove('show');
+    document.getElementById('errorBox').classList.remove('show');
+    document.getElementById('warnBox').classList.remove('show');
+    document.getElementById('matchLoader').classList.add('show');
+    matchBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('locations', JSON.stringify([...selectedLocations]));
+    formData.append('session_id', sessionId);
+
+    try {
+      const res  = await fetch('/match', { method: 'POST', body: formData });
+      const data = await res.json();
+      document.getElementById('matchLoader').classList.remove('show');
+
+      if (!res.ok || data.error) { showError(data.error || 'Something went wrong.'); return; }
+
+      if (data.location_note) {
+        const wb = document.getElementById('warnBox');
+        wb.textContent = data.location_note;
+        wb.classList.add('show');
+      }
+
+      renderJobs(data.jobs);
+      document.getElementById('analysisText').textContent = data.analysis;
+      document.getElementById('results').classList.add('show');
+
+      // Mark resume as uploaded so chatbot knows it's ready
+      resumeUploaded = true;
+      document.getElementById('chatEmpty').innerHTML =
+        '<span class="chat-emoji">🤖</span>Resume loaded! Ask me anything about it.';
+
+    } catch(err) {
+      document.getElementById('matchLoader').classList.remove('show');
+      showError('Could not reach the server. Make sure app.py is running.');
+    } finally {
+      matchBtn.disabled = false;
+    }
+  }
+
+  function renderJobs(jobs) {
+    const grid = document.getElementById('jobGrid');
+    grid.innerHTML = '';
+    jobs.forEach((job, i) => {
+      const skills = job.skills
+        ? job.skills.split(',').slice(0,6).map(s => `<span class="skill-tag">${s.trim()}</span>`).join('')
+        : '';
+      grid.innerHTML += `
+        <div class="job-card" style="animation-delay:${i*0.07}s">
+          <div class="job-card-header">
+            <div>
+              <div class="job-title">${job.title}</div>
+              <div class="job-company">${job.company}</div>
+            </div>
+            <span class="badge">${job.exp !== 'nan' ? job.exp : 'Any level'}</span>
+          </div>
+          <div class="job-meta">
+            <span>📍 ${job.location}</span>
+            <span>💰 ${job.salary !== 'nan' ? job.salary : 'Not listed'}</span>
+          </div>
+          <div class="skills-row">${skills}</div>
+        </div>`;
+    });
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = '⚠️  ' + msg;
+    box.classList.add('show');
+  }
+
+  // ── Chatbot ────────────────────────────────────────────────────────────────
+  function useSuggestion(el) {
+    document.getElementById('chatInput').value = el.textContent.trim();
+    document.getElementById('chatInput').focus();
+  }
+
+  function handleChatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function appendBubble(role, content) {
+    const win = document.getElementById('chatWindow');
+
+    // Hide empty state
+    const empty = document.getElementById('chatEmpty');
+    if (empty) empty.style.display = 'none';
+
+    const wrap = document.createElement('div');
+    wrap.className = `bubble-wrap ${role}`;
+
+    const label = document.createElement('div');
+    label.className = 'bubble-label';
+    label.textContent = role === 'user' ? 'You' : 'AI Advisor';
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = content;
+
+    wrap.appendChild(label);
+    wrap.appendChild(bubble);
+    win.appendChild(wrap);
+    win.scrollTop = win.scrollHeight;
+    return bubble;
+  }
+
+  async function sendMessage() {
+    const input   = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('chatSend');
+    const question = input.value.trim();
+    if (!question) return;
+
+    if (!resumeUploaded) {
+      appendBubble('assistant', '⚠️ Please upload your resume using the Job Matcher tab first, then come back to chat!');
+      return;
+    }
+
+    // Show user message
+    appendBubble('user', question);
+    input.value = '';
+    sendBtn.disabled = true;
+
+    // Show thinking indicator
+    const thinkBubble = appendBubble('assistant', '...');
+    thinkBubble.classList.add('thinking');
+
+    const formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('question',   question);
+    formData.append('history',    JSON.stringify(chatHistory));
+
+    try {
+      const res  = await fetch('/chat', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      thinkBubble.classList.remove('thinking');
+
+      if (!res.ok || data.error) {
+        thinkBubble.textContent = '⚠️ ' + (data.error || 'Something went wrong.');
+        return;
+      }
+
+      thinkBubble.textContent = data.answer;
+
+      // Update history for multi-turn context
+      chatHistory.push({ role: 'user',      content: question     });
+      chatHistory.push({ role: 'assistant', content: data.answer  });
+
+      // Keep history manageable (last 10 messages)
+      if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+    } catch(err) {
+      thinkBubble.classList.remove('thinking');
+      thinkBubble.textContent = '⚠️ Could not reach the server.';
+    } finally {
+      sendBtn.disabled = false;
+      document.getElementById('chatWindow').scrollTop = 9999;
+    }
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  loadLocations();
+</script>
+</body>
+</html>
