@@ -14,17 +14,17 @@ An AI-powered local job matching system that takes your resume and finds the mos
 ### Location Filter
 > _Add a screenshot of the location dropdown here_
 
-![Location Filter](screenshots/location_filter.png)
+![Location Filter](screenshots/location_filter.mp4)
 
 ### Job Results
 > _Add a screenshot of the matched job cards and AI analysis here_
 
-![Job Results](screenshots/job_results.png)
+![Job Results](screenshots/job_results.mp4)
 
 ### Resume Chatbot
 > _Add a screenshot of the chatbot in action here_
 
-![Resume Chatbot](screenshots/chatbot.png)
+![Resume Chatbot](screenshots/chatbot.mp4)
 
 ---
 
@@ -32,29 +32,12 @@ An AI-powered local job matching system that takes your resume and finds the mos
 
 The system is built on a **Retrieval-Augmented Generation (RAG)** pipeline:
 
-```
-Resume (PDF/TXT)
-      │
-      ▼
-Extract Text (pypdf)
-      │
-      ▼
-Embed with mxbai-embed-large (Ollama)
-      │
-      ▼
-Similarity Search → Chroma Vector DB (3,198 jobs)
-      │
-      ▼
-Filter by Location (optional)
-      │
-      ▼
-Top 5 Jobs → llama3.2 (Ollama)
-      │
-      ▼
-Ranked Results + Match Scores + Skill Gap Analysis
-```
+![system architecture](screenshots/system_architecture.svg)
 
 The **chatbot** uses the same llama3.2 model. Once a resume is uploaded, it's stored in memory for the session and used as context for every chat message, enabling personalised multi-turn career coaching.
+
+
+
 
 ---
 
