@@ -7,22 +7,22 @@ An AI-powered local job matching system that takes your resume and finds the mos
 ## 📸 Screenshots
 
 ### Job Matcher
-> _Add a screenshot of the job matcher UI here_
+
 
 ![Job Matcher UI](screenshots/job_matcher.png)
 
 ### Location Filter
-> _Add a screenshot of the location dropdown here_
+
 
 ![Location Filter](screenshots/location_filter.mp4)
 
 ### Job Results
-> _Add a screenshot of the matched job cards and AI analysis here_
+
 
 ![Job Results](screenshots/job_results.mp4)
 
 ### Resume Chatbot
-> _Add a screenshot of the chatbot in action here_
+
 
 ![Resume Chatbot](screenshots/chatbot.mp4)
 
