@@ -14,7 +14,7 @@ An AI-powered local job matching system that takes your resume and finds the mos
 ### Location Filter
 
 
-![Location Filter](screenshots/location_filter.mp4)
+![Location Filter](location_filter.mp4)
 
 ### Job Results
 
